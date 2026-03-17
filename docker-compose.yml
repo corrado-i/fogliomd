@@ -1,0 +1,47 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - fogliomd-network
+
+  backend:
+    build:
+      context: ./fogliomd-be
+    container_name: backend
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - PORT=${PORT}
+    depends_on:
+      - mongodb
+    networks:
+      - fogliomd-network
+
+  frontend:
+    build:
+      context: ./fogliomd-fe
+      args:
+        - VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}
+        - VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}
+        - VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}
+        - VITE_FIREBASE_STORAGE_BUCKET=${VITE_FIREBASE_STORAGE_BUCKET}
+        - VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID}
+        - VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
+        - VITE_API_BASE_URL=/api
+    container_name: frontend
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      - backend
+    networks:
+      - fogliomd-network
+
+networks:
+  fogliomd-network:
+    driver: bridge
+
+volumes:
+  mongo_data:
